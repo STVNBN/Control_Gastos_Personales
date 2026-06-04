@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Financiero</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>Control</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active">
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item">
+          <span>Movimientos</span>
+        </div>
+        <div class="nav-item">
+          <span>Categorías</span>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <h1>Dashboard</h1>
+        <div class="header-actions">
+          <div class="btn-icon">
+          </div>
+          <div class="header-user">
+            <div class="btn-icon">
+            </div>
+            <div class="header-avatar">
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="section active">
+        <div class="balance-card">
+          <div class="balance-info">
+            <span class="balance-label">Balance Total</span>
+            <h2 class="balance-amount">$0.00</h2>
+            <span class="balance-period">Período actual</span>
+          </div>
+          <div class="balance-icon">
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card stat-income">
+            <div class="stat-icon">
+            </div>
+            <div class="stat-body">
+              <span class="stat-label">Ingresos</span>
+              <h3 class="stat-value">$0.00</h3>
+            </div>
+          </div>
+          <div class="stat-card stat-expense">
+            <div class="stat-icon">
+            </div>
+            <div class="stat-body">
+              <span class="stat-label">Gastos</span>
+              <h3 class="stat-value">$0.00</h3>
+            </div>
+          </div>
+          <div class="stat-card stat-count">
+            <div class="stat-icon">
+            </div>
+            <div class="stat-body">
+              <span class="stat-label">Transacciones</span>
+              <h3 class="stat-value">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3> Gastos por Categoría</h3>
+            </div>
+            <div class="card-body empty-container">
+              <span class="empty-title">Sin gastos</span>
+              <span class="empty-subtitle">No hay datos de gastos.</span>
+            </div>
+          </div>
+          <div class="card recent-card">
+            <div class="card-header">
+              <h3>Movimientos Recientes</h3>
+            </div>
+            <div class="card-body empty-container">
+              <p class="empty-state">
+                </i> Sin movimientos recientes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
