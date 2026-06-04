@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Financiero</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════
+       LOGIN (se muestra/oculta con JS)
+  ══════════════════════════════════ -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-header">
+        <i class="fas fa-wallet"></i>
+        <h2>Control Financiero</h2>
+      </div>
+      <div class="login-tabs">
+        <button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
+        <button class="tab-btn" data-tab="register">Registrarse</button>
+      </div>
+      <div class="login-body">
+        <div id="loginError" class="login-error" style="display:none"></div>
+
+        <!-- Formulario Login -->
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo electrónico</label>
+            <input type="email" id="loginEmail" placeholder="ejemplo@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">
+            <i class="fas fa-sign-in-alt"></i> Entrar
+          </button>
+        </form>
+
+        <!-- Formulario Registro -->
+        <form id="registerForm" style="display:none">
+          <div class="form-group">
+            <label for="regName">Nombre</label>
+            <input type="text" id="regName" placeholder="Tu nombre" required>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Correo electrónico</label>
+            <input type="email" id="regEmail" placeholder="ejemplo@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Contraseña</label>
+            <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">
+            <i class="fas fa-user-plus"></i> Crear cuenta
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       APP PRINCIPAL
+  ══════════════════════════════════ -->
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <i class="fas fa-wallet"></i>
+        <span>Control</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-section="dashboard" href="#">
+          <i class="fas fa-chart-pie"></i>
+          <span>Dashboard</span>
+        </a>
+        <a class="nav-item" data-section="movimientos" href="#">
+          <i class="fas fa-exchange-alt"></i>
+          <span>Movimientos</span>
+        </a>
+        <a class="nav-item" data-section="categorias" href="#">
+          <i class="fas fa-tags"></i>
+          <span>Categorías</span>
+        </a>
+      </nav>
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </aside>
+
+    <!-- Overlay para cerrar sidebar en móvil -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main">
+
+      <!-- HEADER -->
+      <header class="header">
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="header-actions">
+          <span class="header-date" id="currentDate"></span>
+          <span class="weather-widget" id="weatherWidget" style="display:none">
+            <i class="fas fa-sun" id="weatherIcon"></i>
+            <span id="weatherTemp">--</span>°C
+          </span>
+          <button class="btn-icon" id="themeToggle" title="Cambiar tema">
+            <i class="fas fa-moon"></i>
+          </button>
+          <div class="header-user" id="headerUser">
+            <span id="headerUserName" class="header-user-name"></span>
+            <button class="btn-icon" id="headerLogoutBtn" title="Cerrar sesión" style="display:none">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+            <div class="header-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ══════════════════════════════
+           SECCION: DASHBOARD
+      ══════════════════════════════ -->
+      <section class="section active" id="section-dashboard">
+
+        <div class="balance-card">
+          <div class="balance-info">
+            <span class="balance-label">Balance Total</span>
+            <h2 class="balance-amount" id="balanceAmount">$0.00</h2>
+            <span class="balance-period">Período actual</span>
+          </div>
+          <div class="balance-icon">
+            <i class="fas fa-credit-card"></i>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card stat-income">
+            <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Ingresos</span>
+              <h3 class="stat-value" id="incomeAmount">$0.00</h3>
+            </div>
+          </div>
+          <div class="stat-card stat-expense">
+            <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Gastos</span>
+              <h3 class="stat-value" id="expenseAmount">$0.00</h3>
+            </div>
+          </div>
+          <div class="stat-card stat-count">
+            <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Transacciones</span>
+              <h3 class="stat-value" id="transactionCount">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3><i class="fas fa-chart-pie"></i> Gastos por Categoría</h3>
+            </div>
+            <div class="card-body chart-container">
+              <canvas id="expenseChart"></canvas>
+              <div class="chart-legend" id="chartLegend"></div>
+            </div>
+          </div>
+          <div class="card recent-card">
+            <div class="card-header">
+              <h3><i class="fas fa-clock"></i> Movimientos Recientes</h3>
+            </div>
+            <div class="card-body">
+              <ul class="recent-list" id="recentList"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════
+           SECCION: MOVIMIENTOS
+      ══════════════════════════════ -->
+      <section class="section" id="section-movimientos">
+        <div class="card form-card">
+          <div class="card-header">
+            <h3><i class="fas fa-plus-circle"></i> Nuevo Movimiento</h3>
+          </div>
+          <div class="card-body">
+            <form id="movimientoForm" class="movimiento-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipo">Tipo</label>
+                  <select id="tipo" required>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="gasto">Gasto</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="monto">Monto</label>
+                  <input type="number" id="monto" step="0.01" min="0.01" placeholder="0.00" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="categoria">Categoría</label>
+                  <select id="categoria" required></select>
+                </div>
+                <div class="form-group">
+                  <label for="fecha">Fecha</label>
+                  <input type="date" id="fecha" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="descripcion">Descripción</label>
+                <input type="text" id="descripcion" placeholder="Descripción del movimiento">
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="movSubmitBtn">
+                  <i class="fas fa-save"></i>
+                  <span id="movSubmitText">Agregar Movimiento</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="cancelEdit" style="display:none">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-header">
+            <h3><i class="fas fa-list"></i> Todos los Movimientos</h3>
+            <span class="badge" id="movementBadge">0</span>
+          </div>
+          <div class="card-body table-wrapper">
+            <table class="table" id="movimientosTable">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Monto</th>
+                  <th>Categoría</th>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="movimientosBody"></tbody>
+            </table>
+            <p class="empty-state" id="emptyMovimientos">
+              <i class="fas fa-inbox"></i> No hay movimientos registrados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════
+           SECCION: CATEGORIAS
+      ══════════════════════════════ -->
+      <section class="section" id="section-categorias">
+        <div class="card form-card">
+          <div class="card-header">
+            <h3><i class="fas fa-plus-circle"></i> Nueva Categoría</h3>
+          </div>
+          <div class="card-body">
+            <form id="categoriaForm" class="categoria-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="catNombre">Nombre</label>
+                  <input type="text" id="catNombre" placeholder="Ej: Transporte" required>
+                </div>
+                <div class="form-group">
+                  <label for="catColor">Color</label>
+                  <input type="color" id="catColor" value="#3b82f6">
+                </div>
+              </div>
+              <div class="form-group checkbox-group">
+                <label>
+                  <input type="checkbox" id="catAllowIncome">
+                  <i class="fas fa-arrow-up" style="color:var(--income)"></i> Permitir ingresos
+                </label>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Crear Categoría
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-tags"></i> Categorías</h3>
+            <span class="badge" id="categoryBadge">0</span>
+          </div>
+          <div class="card-body">
+            <div class="categorias-grid" id="categoriasGrid"></div>
+            <p class="empty-state" id="emptyCategorias">
+              <i class="fas fa-tag"></i> No hay categorías creadas.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
