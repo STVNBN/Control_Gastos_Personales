@@ -8,18 +8,19 @@
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
+
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <span>Control</span>
+        <span>Gastos</span>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-item active">
+        <div class="nav-item active" data-section="dashboard">
           <span>Dashboard</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-section="movimientos">
           <span>Movimientos</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-section="categoria">
           <span>Categorías</span>
         </div>
       </nav>
@@ -29,48 +30,36 @@
       <header class="header">
         <h1>Dashboard</h1>
         <div class="header-actions">
-          <div class="btn-icon">
-          </div>
           <div class="header-user">
-            <div class="btn-icon">
-            </div>
-            <div class="header-avatar">
-            </div>
+            <span class="header-user-name">Usuario</span>
+            <div class="header-avatar">U</div>
           </div>
         </div>
       </header>
 
-      <section class="section active">
+      <section class="section active" id="section-dashboard">
         <div class="balance-card">
           <div class="balance-info">
             <span class="balance-label">Balance Total</span>
             <h2 class="balance-amount">$0.00</h2>
             <span class="balance-period">Período actual</span>
           </div>
-          <div class="balance-icon">
-          </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card stat-income">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Ingresos</span>
               <h3 class="stat-value">$0.00</h3>
             </div>
           </div>
           <div class="stat-card stat-expense">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Gastos</span>
               <h3 class="stat-value">$0.00</h3>
             </div>
           </div>
           <div class="stat-card stat-count">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Transacciones</span>
               <h3 class="stat-value">0</h3>
@@ -93,13 +82,96 @@
               <h3>Movimientos Recientes</h3>
             </div>
             <div class="card-body empty-container">
-              <p class="empty-state">
-                </i> Sin movimientos recientes.
-              </p>
+              <p class="empty-state">Sin movimientos recientes.</p>
             </div>
           </div>
         </div>
       </section>
+
+<section class="section" id="section-movimientos">
+        <div class="card form-card">
+          <div class="card-header">
+            <h3>Nuevo Movimiento</h3>
+          </div>
+          <div class="card-body">
+            <form id="movimientoForm" class="movimiento-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipo">Tipo</label>
+                  <select id="tipo" required>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="gasto">Gasto</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="monto">Monto</label>
+                  <input type="number" id="monto" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="categoria">Categoría</label>
+                  <select id="categoria" required>
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Salario">Salario</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="fecha">Fecha</label>
+                  <input type="date" id="fecha" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="descripcion">Descripción</label>
+                <input type="text" id="descripcion" placeholder="Descripción del movimiento" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="movSubmitBtn">
+                  Agregar Movimiento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-header">
+            <h3>Todos los Movimientos</h3>
+            <span class="badge" id="movementBadge">0</span>
+          </div>
+          <div class="card-body table-wrapper">
+            <table class="table" id="movimientosTable">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Monto</th>
+                  <th>Categoría</th>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="movimientosBody"></tbody>
+            </table>
+            <p class="empty-state" id="emptyMovimientos">
+              No hay movimientos registrados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-categorias">
+        <div class="card">
+          <div class="card-header">
+            <h3>Gestión de Categorías</h3>
+          </div>
+          <div class="card-body">
+            <p>Próximamente</p>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
   <script src="app.js"></script>
