@@ -7,20 +7,86 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
+  <!-- ══════════════════════════════════
+       LOGIN — se muestra al abrir la app
+       Se oculta con JS al iniciar sesion
+  ══════════════════════════════════ -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+
+      <div class="login-header">
+        <h2>Control Financiero</h2>
+        <p>Gestiona tus gastos personales</p>
+      </div>
+
+      <!-- Tabs para cambiar entre login y registro -->
+      <div class="login-tabs">
+        <button class="tab-btn active" data-tab="login">Iniciar Sesion</button>
+        <button class="tab-btn" data-tab="register">Registrarse</button>
+      </div>
+
+      <div class="login-body">
+
+        <!-- Mensaje de error -->
+        <div id="loginError" class="login-error" style="display:none"></div>
+
+        <!-- Formulario Login -->
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo electronico</label>
+            <input type="email" id="loginEmail" placeholder="ejemplo@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contrasena</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">
+            Entrar
+          </button>
+        </form>
+
+        <!-- Formulario Registro -->
+        <form id="registerForm" style="display:none">
+          <div class="form-group">
+            <label for="regName">Nombre completo</label>
+            <input type="text" id="regName" placeholder="Tu nombre" required>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Correo electronico</label>
+            <input type="email" id="regEmail" placeholder="ejemplo@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Contrasena</label>
+            <input type="password" id="regPassword" placeholder="Minimo 6 caracteres" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%">
+            Crear cuenta
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       APP PRINCIPAL (sin cambios)
+  ══════════════════════════════════ -->
   <div class="app">
-    <aside class="sidebar">
+
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <span>Control</span>
+        <span>Gastos</span>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-item active">
+        <div class="nav-item active" data-section="dashboard">
           <span>Dashboard</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-section="movimientos">
           <span>Movimientos</span>
         </div>
-        <div class="nav-item">
-          <span>Categorías</span>
+        <div class="nav-item" data-section="categoria">
+          <span>Categorias</span>
         </div>
       </nav>
     </aside>
@@ -29,48 +95,41 @@
       <header class="header">
         <h1>Dashboard</h1>
         <div class="header-actions">
-          <div class="btn-icon">
-          </div>
           <div class="header-user">
-            <div class="btn-icon">
-            </div>
-            <div class="header-avatar">
-            </div>
+            <!-- Nombre del usuario logueado (se llena con JS) -->
+            <span class="header-user-name" id="headerUserName"></span>
+            <!-- Boton cerrar sesion -->
+            <button id="headerLogoutBtn" class="btn btn-secondary" style="display:none">
+              Cerrar sesion
+            </button>
+            <div class="header-avatar">U</div>
           </div>
         </div>
       </header>
 
-      <section class="section active">
+      <section class="section active" id="section-dashboard">
         <div class="balance-card">
           <div class="balance-info">
             <span class="balance-label">Balance Total</span>
             <h2 class="balance-amount">$0.00</h2>
-            <span class="balance-period">Período actual</span>
-          </div>
-          <div class="balance-icon">
+            <span class="balance-period">Periodo actual</span>
           </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card stat-income">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Ingresos</span>
               <h3 class="stat-value">$0.00</h3>
             </div>
           </div>
           <div class="stat-card stat-expense">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Gastos</span>
               <h3 class="stat-value">$0.00</h3>
             </div>
           </div>
           <div class="stat-card stat-count">
-            <div class="stat-icon">
-            </div>
             <div class="stat-body">
               <span class="stat-label">Transacciones</span>
               <h3 class="stat-value">0</h3>
@@ -81,7 +140,7 @@
         <div class="dashboard-grid">
           <div class="card chart-card">
             <div class="card-header">
-              <h3> Gastos por Categoría</h3>
+              <h3>Gastos por Categoria</h3>
             </div>
             <div class="card-body empty-container">
               <span class="empty-title">Sin gastos</span>
@@ -93,15 +152,96 @@
               <h3>Movimientos Recientes</h3>
             </div>
             <div class="card-body empty-container">
-              <p class="empty-state">
-                </i> Sin movimientos recientes.
-              </p>
+              <p class="empty-state">Sin movimientos recientes.</p>
             </div>
           </div>
         </div>
       </section>
+
+      <section class="section" id="section-movimientos">
+        <div class="card form-card">
+          <div class="card-header">
+            <h3>Nuevo Movimiento</h3>
+          </div>
+          <div class="card-body">
+            <form id="movimientoForm" class="movimiento-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipo">Tipo</label>
+                  <select id="tipo" required>
+                    <option value="ingreso">Ingreso</option>
+                    <option value="gasto">Gasto</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="monto">Monto</label>
+                  <input type="number" id="monto" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="categoria">Categoria</label>
+                  <select id="categoria" required>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="fecha">Fecha</label>
+                  <input type="date" id="fecha" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="descripcion">Descripcion</label>
+                <input type="text" id="descripcion" placeholder="Descripcion del movimiento" />
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="movSubmitBtn">
+                  Agregar Movimiento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-header">
+            <h3>Todos los Movimientos</h3>
+            <span class="badge" id="movementBadge">0</span>
+          </div>
+          <div class="card-body table-wrapper">
+            <table class="table" id="movimientosTable">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Monto</th>
+                  <th>Categoria</th>
+                  <th>Fecha</th>
+                  <th>Descripcion</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody id="movimientosBody"></tbody>
+            </table>
+            <p class="empty-state" id="emptyMovimientos">
+              No hay movimientos registrados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-categorias">
+        <div class="card">
+          <div class="card-header">
+            <h3>Gestion de Categorias</h3>
+          </div>
+          <div class="card-body">
+            <p>Proximamente</p>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
