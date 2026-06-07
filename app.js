@@ -566,5 +566,5 @@ if (movCancelBtn) {
 // Inicialización de la UI
 renderMovimientos();
 renderCategorias();
-updateCategoriaSelect(); // Poblar dropdown al inicio
+updateCategoriaSelect();
 updateDashboard();
