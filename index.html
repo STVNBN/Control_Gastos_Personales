@@ -118,7 +118,7 @@
       <section class="section" id="section-movimientos">
         <div class="card form-card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-plus-minus"></i> Nuevo Movimiento</h3>
+            <h3 id="movFormTitle"><i class="fa-solid fa-plus-minus"></i> Nuevo Movimiento</h3>
           </div>
           <div class="card-body" style="padding: 20px;">
             <form id="movimientoForm" class="movimiento-form" onsubmit="event.preventDefault();">
@@ -156,9 +156,12 @@
                 <label for="descripcion">Descripción</label>
                 <input type="text" id="descripcion" placeholder="Descripción del movimiento" />
               </div>
-              <div class="form-actions">
+              <div class="form-actions" style="display: flex; gap: 10px;">
                 <button type="submit" class="btn btn-primary" id="movSubmitBtn">
                   Agregar Movimiento
+                </button>
+                <button type="button" class="btn" id="movCancelBtn" style="display: none; background: #e2e8f0; color: var(--text);">
+                  Cancelar
                 </button>
               </div>
             </form>
@@ -179,6 +182,7 @@
                   <th>Categoría</th>
                   <th>Fecha</th>
                   <th>Descripción</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="movimientosBody"></tbody>
@@ -200,7 +204,7 @@
             <form id="categoriaForm" class="categoria-form" onsubmit="event.preventDefault();">
               <div class="form-group">
                 <label for="catNombre">Nombre de la Categoría</label>
-                <input type="text" id="catNombre" placeholder="Ej. Regalos, Servicios..." required />
+                <input type="text" id="catNombre" placeholder="Ej. Compra, venta..." required />
               </div>
               <div class="form-row">
                 <div class="form-group">
