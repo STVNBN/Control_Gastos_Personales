@@ -252,7 +252,7 @@ function updateDashboard() {
             <span>${item.nombre}</span>
             <span style="font-weight: 600;">$${item.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${item.pct.toFixed(1)}%)</span>
           </div>
-          <div style="background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
             <div style="background: ${item.color}; width: ${item.pct}%; height: 100%; border-radius: 4px;"></div>
           </div>
         </div>
@@ -563,8 +563,45 @@ if (movCancelBtn) {
   movCancelBtn.addEventListener('click', cancelarEdicion);
 }
 
+// --- MODO OSCURO (DARK MODE) ---
+const themeToggle = document.getElementById('themeToggle');
+const body = document.body;
+
+// Cargar tema guardado o usar preferencia del sistema
+const temaGuardado = localStorage.getItem('tema') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+if (temaGuardado === 'dark') {
+  body.classList.add('dark-mode');
+  if (themeToggle) {
+    themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    themeToggle.title = 'Cambiar a modo claro';
+  }
+} else {
+  if (themeToggle) {
+    themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    themeToggle.title = 'Cambiar a modo oscuro';
+  }
+}
+
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    const esModoOscuro = body.classList.contains('dark-mode');
+    localStorage.setItem('tema', esModoOscuro ? 'dark' : 'light');
+    
+    // Cambiar icono y tooltip dinámicamente con transiciones suaves
+    if (esModoOscuro) {
+      themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+      themeToggle.title = 'Cambiar a modo claro';
+    } else {
+      themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+      themeToggle.title = 'Cambiar a modo oscuro';
+    }
+  });
+}
+
 // Inicialización de la UI
 renderMovimientos();
 renderCategorias();
-updateCategoriaSelect(); // Poblar dropdown al inicio
+updateCategoriaSelect(); 
 updateDashboard();
