@@ -586,9 +586,10 @@ function verificarSesion() {
     if (appContainer) appContainer.style.display = "flex";
     
     // Actualizar datos de usuario en la UI
-    if (headerUserName) headerUserName.textContent = usuario;
+    const nombreMostrar = usuario.includes("@") ? usuario.split("@")[0] : usuario;
+    if (headerUserName) headerUserName.textContent = nombreMostrar;
     if (headerAvatar) {
-      headerAvatar.textContent = usuario.charAt(0).toUpperCase();
+      headerAvatar.textContent = nombreMostrar.charAt(0).toUpperCase();
     }
 
     // Renderizar la UI
