@@ -18,7 +18,7 @@ navItems.forEach(item => {
   });
 });
 
-// Datos de prueba
+// Datos de prueba por defecto
 const categoriasPorDefecto = [
   { id: 'cat-alimentacion-gasto', nombre: 'Alimentación', color: '#ef4444', tipo: 'gasto' },
   { id: 'cat-transporte-gasto', nombre: 'Transporte', color: '#3b82f6', tipo: 'gasto' },
@@ -35,154 +35,158 @@ const movimientosPorDefecto = [
   { id: 'mov-4', tipo: 'gasto', monto: 120.00, categoriaId: 'cat-vivienda-gasto', fecha: '2026-06-03', descripcion: 'Pago de Internet' }
 ];
 
-// LocalStorage o datos por defecto
-let categorias = JSON.parse(localStorage.getItem('categorias')) || categoriasPorDefecto;
-let movimientos = JSON.parse(localStorage.getItem('movimientos')) || movimientosPorDefecto;
+// Variables globales para los datos del usuario activo
+let categorias = [];
+let movimientos = [];
 
-// Compatibilidad coin datos antiguops Id
-let huboCambioMigracion = false;
+// FUNCIONES DE COOKIES =
+function guardarCookie(nombre, valor, dias) {
+  let fecha = new Date();
+  fecha.setTime(fecha.getTime() + (dias * 24 * 60 * 60 * 1000));
+  document.cookie = `${nombre}=${encodeURIComponent(valor)}; expires=${fecha.toUTCString()}; path=/; SameSite=Lax`;
+}
 
-// IDs por categorías si hay
-categorias.forEach(c => {
-  if (!c.id) {
-    c.id = `cat-${c.nombre.toLowerCase().replace(/\s+/g, '-')}-${c.tipo}`;
-    huboCambioMigracion = true;
-  }
-});
-
-// Id y categoriaId de movimientos
-movimientos.forEach((m, index) => {
-  if (!m.id) {
-    m.id = `mov-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`;
-    huboCambioMigracion = true;
-  }
-  // Convertir campo "categoria" (nombre) a "categoriaId" relacional
-  if (m.categoria && !m.categoriaId) {
-    const catEncontrada = categorias.find(c => c.nombre.toLowerCase() === m.categoria.toLowerCase() && c.tipo === m.tipo);
-    if (catEncontrada) {
-      m.categoriaId = catEncontrada.id;
-    } else {
-      // Si la categoría no existe, le creamos un ID genérico
-      m.categoriaId = `cat-${m.categoria.toLowerCase().replace(/\s+/g, '-')}-${m.tipo}`;
+function obtenerCookie(nombre) {
+  let cookies = document.cookie.split(";");
+  for (let cookie of cookies) {
+    let [key, value] = cookie.trim().split("=");
+    if (key === nombre) {
+      return decodeURIComponent(value);
     }
-    delete m.categoria;
-    huboCambioMigracion = true;
+  }
+  return null;
+}
+
+function borrarCookie(nombre) {
+  document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+}
+
+// =================== GESTIÓN DE DATOS POR USUARIO =====================
+function cargarDatosUsuario() {
+  const usuario = obtenerCookie("usuario");
+  if (usuario) {
+    // Intentar obtener los datos del usuario específico
+    const userCats = localStorage.getItem(`categorias_${usuario}`);
+    const userMovs = localStorage.getItem(`movimientos_${usuario}`);
+    
+    if (userCats && userMovs) {
+      categorias = JSON.parse(userCats);
+      movimientos = JSON.parse(userMovs);
+    } else {
+      // Si el usuario no tiene datos guardados, migrar/copiar los datos globales actuales (si los hay)
+      // para evitar pérdida de registros en la primera carga
+      const globalCats = localStorage.getItem('categorias');
+      const globalMovs = localStorage.getItem('movimientos');
+      
+      categorias = globalCats ? JSON.parse(globalCats) : categoriasPorDefecto;
+      movimientos = globalMovs ? JSON.parse(globalMovs) : movimientosPorDefecto;
+      
+      // Guardar inmediatamente la copia para el nuevo usuario
+      localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
+      localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
+    }
+  } else {
+    categorias = [...categoriasPorDefecto];
+    movimientos = [...movimientosPorDefecto];
+  }
+}
+
+function inicializarDatos() {
+  cargarDatosUsuario();
+  
+  // Compatibilidad con formatos de IDs antiguos en los datos del usuario
+  let huboCambioMigracion = false;
+  
+  categorias.forEach(c => {
+    if (!c.id) {
+      c.id = `cat-${c.nombre.toLowerCase().replace(/\s+/g, '-')}-${c.tipo}`;
+      huboCambioMigracion = true;
+    }
+  });
+  
+  movimientos.forEach((m, index) => {
+    if (!m.id) {
+      m.id = `mov-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`;
+      huboCambioMigracion = true;
+    }
+    if (m.categoria && !m.categoriaId) {
+      const catEncontrada = categorias.find(c => c.nombre.toLowerCase() === m.categoria.toLowerCase() && c.tipo === m.tipo);
+      if (catEncontrada) {
+        m.categoriaId = catEncontrada.id;
+      } else {
+        m.categoriaId = `cat-${m.categoria.toLowerCase().replace(/\s+/g, '-')}-${m.tipo}`;
+      }
+      delete m.categoria;
+      huboCambioMigracion = true;
+    }
+  });
+  
+  if (huboCambioMigracion) {
+    saveCategorias();
+    saveMovimientos();
+  }
+}
+
+// VERIFICACIÓN DE SESIÓN
+function verificarSesion() {
+  const usuario = obtenerCookie("usuario");
+  const appContainer = document.querySelector(".app");
+  const loginScreen = document.getElementById("loginScreen");
+  const headerUserName = document.querySelector(".header-user-name");
+  const headerAvatar = document.querySelector(".header-avatar");
+
+  if (usuario) {
+    // Cargar y migrar datos del usuario
+    inicializarDatos();
+    
+    // Ocultar login y mostrar dashboard
+    if (loginScreen) loginScreen.style.display = "none";
+    if (appContainer) appContainer.style.display = "flex";
+    
+    // Actualizar datos de usuario en la UI
+    if (headerUserName) headerUserName.textContent = usuario;
+    if (headerAvatar) {
+      headerAvatar.textContent = usuario.charAt(0).toUpperCase();
+    }
+
+    // Renderizar la UI
+    renderMovimientos();
+    renderCategorias();
+    updateCategoriaSelect(); 
+    updateDashboard();
+  } else {
+    // Ocultar dashboard y mostrar pantalla de login
+    if (appContainer) appContainer.style.display = "none";
+    if (loginScreen) loginScreen.style.display = "flex";
+  }
+}
+
+// Configuración de event listeners para el Login y Logout
+document.addEventListener("DOMContentLoaded", () => {
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const loginUsuario = document.getElementById("loginUsuario").value.trim();
+      if (loginUsuario) {
+        guardarCookie("usuario", loginUsuario, 7); // Guardar por 7 días
+        verificarSesion();
+        document.getElementById("loginUsuario").value = "";
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+        borrarCookie("usuario");
+        // Forzar recarga ligera o verificación directa de sesión
+        verificarSesion();
+      }
+    });
   }
 });
-
-// Guardado inicial si no existían en localStorage o si se migraron datos antiguos
-if (huboCambioMigracion || !localStorage.getItem('categorias')) {
-  localStorage.setItem('categorias', JSON.stringify(categorias));
-}
-if (huboCambioMigracion || !localStorage.getItem('movimientos')) {
-  localStorage.setItem('movimientos', JSON.stringify(movimientos));
-}
-
-// DOM
-const movBody = document.getElementById('movimientosBody');
-const emptyMov = document.getElementById('emptyMovimientos');
-const movBadge = document.getElementById('movementBadge');
-const catList = document.getElementById('categoriasList');
-const catBadge = document.getElementById('categoryBadge');
-
-let editId = null;
-
-// Render de tablas
-function renderMovimientos() {
-  if (!movBody) return;
-  
-  if (movBadge) {
-    movBadge.textContent = movimientos.length;
-  }
-
-  // Mostrar u ocultar 
-  if (movimientos.length === 0) {
-    movBody.innerHTML = '';
-    if (emptyMov) emptyMov.style.display = 'block';
-    return;
-  }
-  
-  if (emptyMov) emptyMov.style.display = 'none';
-
-  // HTML de las filas
-  movBody.innerHTML = movimientos.map(m => {
-    const cls = m.tipo === 'ingreso' ? 'ingreso' : 'gasto';
-    const signo = m.tipo === 'ingreso' ? '+' : '-';
-    const colorMonto = m.tipo === 'ingreso' ? 'var(--income)' : 'var(--expense)';
-    
-    // Monto formateado
-    const montoFormateado = `$${m.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-    // Buscar color y nombre de la categoría por su ID
-    const cat = categorias.find(c => c.id === m.categoriaId);
-    const catColor = cat ? cat.color : '#6b7280';
-    const catNombre = cat ? cat.nombre : 'Sin categoría';
-
-    return `
-      <tr>
-        <td><span class="type-badge ${cls}">${m.tipo}</span></td>
-        <td style="font-weight:600; color:${colorMonto}">${signo}${montoFormateado}</td>
-        <td>
-          <span style="display: inline-flex; align-items: center; gap: 8px;">
-            <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${catColor}"></span>
-            ${catNombre}
-          </span>
-        </td>
-        <td>${m.fecha}</td>
-        <td>${m.descripcion || '—'}</td>
-        <td>
-          <div style="display: flex; gap: 4px;">
-            <button class="btn" style="background: transparent; color: var(--primary); padding: 6px 12px; font-size: 0.82rem;" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'" onclick="iniciarEdicion('${m.id}')" title="Editar movimiento">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="btn btn-danger" onclick="eliminarMovimiento('${m.id}')" title="Eliminar movimiento">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-// render de listas
-function renderCategorias() {
-  if (!catList) return;
-  if (catBadge) {
-    catBadge.textContent = categorias.length;
-  }
-  
-  if (categorias.length === 0) {
-    catList.innerHTML = `<p class="empty-state">No hay categorías registradas.</p>`;
-    return;
-  }
-  
-  catList.innerHTML = categorias.map(c => {
-    const count = movimientos.filter(m => m.categoriaId === c.id).length;
-    const tipoBadge = c.tipo === 'ingreso' 
-      ? `<span class="type-badge ingreso">Ingreso</span>`
-      : `<span class="type-badge gasto">Gasto</span>`;
-
-    const actionHtml = `<button class="btn-delete-cat" onclick="eliminarCategoria('${c.id}')" title="Eliminar categoría">
-           <i class="fa-solid fa-trash"></i>
-         </button>`;
-
-    return `
-      <div class="category-item" style="border-left: 5px solid ${c.color};">
-        <div class="category-item-info">
-          <span class="category-item-name">${c.nombre}</span>
-          <div class="category-item-meta">
-            ${tipoBadge}
-            <span class="category-usage-badge">${count} transacciones</span>
-          </div>
-        </div>
-        <div class="category-item-actions">
-          ${actionHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
 
 // Calculo del dashboard
 function updateDashboard() {
@@ -301,11 +305,21 @@ function updateDashboard() {
 
 // PERSISTENCIA CON LOCAL STORAGE
 function saveCategorias() {
-  localStorage.setItem('categorias', JSON.stringify(categorias));
+   const usuario = obtenerCookie("usuario");
+  if (usuario) {
+    localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
+  } else {
+    localStorage.setItem('categorias', JSON.stringify(categorias));
+  }
 }
 
 function saveMovimientos() {
-  localStorage.setItem('movimientos', JSON.stringify(movimientos));
+  const usuario = obtenerCookie("usuario");
+  if (usuario) {
+    localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
+  } else {
+    localStorage.setItem('movimientos', JSON.stringify(movimientos));
+  }
 }
 
 //FUNCIONES PARA EL CRUD
@@ -425,7 +439,7 @@ window.eliminarCategoria = function(id) {
   }
 };
 
-// --- SELECT DE CATEGORÍAS DINÁMICO ---
+// CATEGORÍAS DINÁMICO 
 function updateCategoriaSelect() {
   const tipoSelect = document.getElementById('tipo');
   const categoriaSelect = document.getElementById('categoria');
@@ -439,7 +453,7 @@ function updateCategoriaSelect() {
   ).join('');
 }
 
-// --- SUBMIT DE FORMULARIOS ---
+// SUBMIT DE FORMULARIOS
 
 const movimientoForm = document.getElementById('movimientoForm');
 if (movimientoForm) {
@@ -600,8 +614,6 @@ if (themeToggle) {
   });
 }
 
-// Inicialización de la UI
-renderMovimientos();
-renderCategorias();
-updateCategoriaSelect(); 
-updateDashboard();
+// Inicialización de la UI basada en el estado de la sesión
+verificarSesion();
+
