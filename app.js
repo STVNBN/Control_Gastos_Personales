@@ -39,6 +39,15 @@ const movimientosPorDefecto = [
 let categorias = [];
 let movimientos = [];
 
+// DOM
+const movBody = document.getElementById('movimientosBody');
+const emptyMov = document.getElementById('emptyMovimientos');
+const movBadge = document.getElementById('movementBadge');
+const catList = document.getElementById('categoriasList');
+const catBadge = document.getElementById('categoryBadge');
+
+let editId = null;
+
 // FUNCIONES DE COOKIES =
 function guardarCookie(nombre, valor, dias) {
   let fecha = new Date();
@@ -61,7 +70,7 @@ function borrarCookie(nombre) {
   document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
 }
 
-// =================== GESTIÓN DE DATOS POR USUARIO =====================
+// GESTIÓN DE DATOS POR USUARIO 
 function cargarDatosUsuario() {
   const usuario = obtenerCookie("usuario");
   if (usuario) {
@@ -73,8 +82,7 @@ function cargarDatosUsuario() {
       categorias = JSON.parse(userCats);
       movimientos = JSON.parse(userMovs);
     } else {
-      // Si el usuario no tiene datos guardados, migrar/copiar los datos globales actuales (si los hay)
-      // para evitar pérdida de registros en la primera carga
+      // Si el usuario no tiene datos guardados, migrar/copiar los datos actuales
       const globalCats = localStorage.getItem('categorias');
       const globalMovs = localStorage.getItem('movimientos');
       
@@ -125,6 +133,102 @@ function inicializarDatos() {
     saveCategorias();
     saveMovimientos();
   }
+}
+
+// Render de listas y tablas
+function renderMovimientos() {
+  if (!movBody) return;
+  
+  if (movBadge) {
+    movBadge.textContent = movimientos.length;
+  }
+
+  // Mostrar u ocultar 
+  if (movimientos.length === 0) {
+    movBody.innerHTML = '';
+    if (emptyMov) emptyMov.style.display = 'block';
+    return;
+  }
+  
+  if (emptyMov) emptyMov.style.display = 'none';
+
+  // HTML de las filas
+  movBody.innerHTML = movimientos.map(m => {
+    const cls = m.tipo === 'ingreso' ? 'ingreso' : 'gasto';
+    const signo = m.tipo === 'ingreso' ? '+' : '-';
+    const colorMonto = m.tipo === 'ingreso' ? 'var(--income)' : 'var(--expense)';
+    
+    // Monto formateado
+    const montoFormateado = `$${m.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // Buscar color y nombre de la categoría por su ID
+    const cat = categorias.find(c => c.id === m.categoriaId);
+    const catColor = cat ? cat.color : '#6b7280';
+    const catNombre = cat ? cat.nombre : 'Sin categoría';
+
+    return `
+      <tr>
+        <td><span class="type-badge ${cls}">${m.tipo}</span></td>
+        <td style="font-weight:600; color:${colorMonto}">${signo}${montoFormateado}</td>
+        <td>
+          <span style="display: inline-flex; align-items: center; gap: 8px;">
+            <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:${catColor}"></span>
+            ${catNombre}
+          </span>
+        </td>
+        <td>${m.fecha}</td>
+        <td>${m.descripcion || '—'}</td>
+        <td>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn" style="background: transparent; color: var(--primary); padding: 6px 12px; font-size: 0.82rem;" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='transparent'" onclick="iniciarEdicion('${m.id}')" title="Editar movimiento">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn btn-danger" onclick="eliminarMovimiento('${m.id}')" title="Eliminar movimiento">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderCategorias() {
+  if (!catList) return;
+  if (catBadge) {
+    catBadge.textContent = categorias.length;
+  }
+  
+  if (categorias.length === 0) {
+    catList.innerHTML = `<p class="empty-state">No hay categorías registradas.</p>`;
+    return;
+  }
+  
+  catList.innerHTML = categorias.map(c => {
+    const count = movimientos.filter(m => m.categoriaId === c.id).length;
+    const tipoBadge = c.tipo === 'ingreso' 
+      ? `<span class="type-badge ingreso">Ingreso</span>`
+      : `<span class="type-badge gasto">Gasto</span>`;
+
+    const actionHtml = `<button class="btn-delete-cat" onclick="eliminarCategoria('${c.id}')" title="Eliminar categoría">
+           <i class="fa-solid fa-trash"></i>
+         </button>`;
+
+    return `
+      <div class="category-item" style="border-left: 5px solid ${c.color};">
+        <div class="category-item-info">
+          <span class="category-item-name">${c.nombre}</span>
+          <div class="category-item-meta">
+            ${tipoBadge}
+            <span class="category-usage-badge">${count} transacciones</span>
+          </div>
+        </div>
+        <div class="category-item-actions">
+          ${actionHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // VERIFICACIÓN DE SESIÓN
@@ -603,7 +707,7 @@ if (themeToggle) {
     const esModoOscuro = body.classList.contains('dark-mode');
     localStorage.setItem('tema', esModoOscuro ? 'dark' : 'light');
     
-    // Cambiar icono y tooltip dinámicamente con transiciones suaves
+    // Cambia icono y tooltip 
     if (esModoOscuro) {
       themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
       themeToggle.title = 'Cambiar a modo claro';
