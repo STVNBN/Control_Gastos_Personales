@@ -490,3 +490,32 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   background: var(--expense-bg);
   border-color: var(--expense);
 }
+
+/* TABS DE LOGIN */
+.login-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+
+.login-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.login-tab.active {
+  border-bottom: 2px solid var(--primary);
+  color: var(--primary);
+}
+
+.login-tab:hover:not(.active) {
+  color: var(--text);
+}
