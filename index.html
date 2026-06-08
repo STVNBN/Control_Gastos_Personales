@@ -63,6 +63,41 @@
           </div>
         </div>
 
+        <!-- Tarjeta de Información Local: Geolocalización + APIs con Fetch -->
+        <div class="card local-info-card" id="localInfoCard" style="display: none; margin-bottom: 24px; border: 1px solid var(--border);">
+          <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <div class="local-item location-info" style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
+              <div style="background: var(--primary-light); color: var(--primary); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; font-weight: 500;">Ubicación Actual</span>
+                <span id="localCity" style="font-weight: 600; font-size: 0.92rem; color: var(--text);">Cargando ubicación...</span>
+              </div>
+            </div>
+
+            <div class="local-item weather-info" style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
+              <div id="weatherIconContainer" style="background: var(--info-bg); color: var(--info); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                <i class="fa-solid fa-cloud-sun"></i>
+              </div>
+              <div>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; font-weight: 500;">Clima Local</span>
+                <span id="localWeather" style="font-weight: 600; font-size: 0.92rem; color: var(--text);">Cargando clima...</span>
+              </div>
+            </div>
+
+            <div class="local-item exchange-info" style="display: flex; align-items: center; gap: 12px; min-width: 200px;">
+              <div style="background: var(--income-bg); color: var(--income); width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                <i class="fa-solid fa-coins"></i>
+              </div>
+              <div>
+                <span style="font-size: 0.75rem; color: var(--text-secondary); display: block; font-weight: 500;">Tipo de Cambio (U$D)</span>
+                <span id="localExchange" style="font-weight: 600; font-size: 0.92rem; color: var(--text);">Cargando divisas...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="stats-grid">
           <div class="stat-card stat-income">
             <div class="stat-icon">
