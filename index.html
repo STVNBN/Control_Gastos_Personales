@@ -29,6 +29,12 @@
           <span>Categorías</span>
         </div>
       </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
     </aside>
 
     <main class="main">
@@ -247,6 +253,27 @@
 
     </main>
   </div>
+
+<!-- Pantalla de Inicio de Sesión  -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <i class="fa-solid fa-wallet"></i>
+        <h2>Control Financiero</h2>
+      </div>
+      <p class="login-subtitle">Gestiona tus ingresos y gastos</p>
+      <form id="loginForm" class="login-form" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="loginUsuario">Nombre de Usuario</label>
+          <input type="text" id="loginUsuario" placeholder="Ingresa tu nombre para comenzar" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+          Ingresar <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 4px;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
