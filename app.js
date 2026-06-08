@@ -277,7 +277,208 @@ function renderCategorias() {
   }).join('');
 }
 
-// VERIFICACIÓN DE SESIÓN
+// VERIFICACIÓN DE SESIÓN E INFORMACIÓN LOCAL
+
+// Carga información de geolocalización y APIs de clima y tipo de cambio
+function cargarInformacionLocal() {
+  const localInfoCard = document.getElementById('localInfoCard');
+  if (!localInfoCard) return;
+
+  // Intentar cargar de sessionStorage para evitar peticiones repetidas en la misma sesión
+  try {
+    const cachedData = sessionStorage.getItem('info_local_cache');
+    if (cachedData) {
+      const data = JSON.parse(cachedData);
+      localInfoCard.style.display = 'block';
+      mostrarDatosLocales(data);
+      return;
+    }
+  } catch (error) {
+    console.error("Error al leer de sessionStorage:", error);
+  }
+
+  // Si no está en cache, solicitar geolocalización
+  if (!navigator.geolocation) {
+    console.warn("Geolocalización no soportada por el navegador.");
+    return;
+  }
+
+  // Muestra la tarjeta en estado de carga
+  localInfoCard.style.display = 'block';
+  actualizarUIEstadoLocal("Obteniendo ubicación...", "Cargando clima...", "Cargando divisas...");
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        // Llama a las APIs usando Fetch
+        const datos = await obtenerDatosAPIs(lat, lon);
+        
+        // Guardar en cache de la sesión
+        try {
+          sessionStorage.setItem('info_local_cache', JSON.stringify(datos));
+        } catch (e) {
+          console.error("Error al guardar en sessionStorage:", e);
+        }
+
+        mostrarDatosLocales(datos);
+      } catch (error) {
+        console.error("Error al procesar datos de las APIs:", error);
+        actualizarUIEstadoLocal("Ubicación no disponible", "Clima no disponible", "Tasa de cambio no disponible");
+      }
+    },
+    (error) => {
+      console.warn("Acceso a la ubicación denegado o no disponible:", error);
+      // Actualiza la UI para reflejar que el permiso fue denegado o hubo un error
+      actualizarUIEstadoLocal(
+        "Permiso de ubicación denegado", 
+        "Ubicación desactivada", 
+        "Moneda base: USD"
+      );
+    },
+    { timeout: 10000 }
+  );
+}
+
+// Obtener datos desde las APIs REST: Nominatim, Open-Meteo y ExchangeRate con Fetch
+async function obtenerDatosAPIs(lat, lon) {
+  const resultado = {
+    ciudad: 'Ubicación desconocida',
+    pais: '',
+    temperatura: '--',
+    climaDescripcion: 'No disponible',
+    climaIcono: 'fa-cloud-sun',
+    tasaCambio: 'No disponible',
+    monedaCodigo: 'USD'
+  };
+
+  // Geolocalización inversa Nominatim API
+  try {
+    const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'ControlGastosPersonalesApp/1.0'
+      }
+    });
+    if (resGeo.ok) {
+      const dataGeo = await resGeo.json();
+      const address = dataGeo.address;
+      if (address) {
+        resultado.ciudad = address.city || address.town || address.village || address.suburb || 'Ubicación local';
+        resultado.pais = address.country || '';
+        resultado.paisCodigo = address.country_code ? address.country_code.toUpperCase() : '';
+      }
+    }
+  } catch (error) {
+    console.error("Error en reverse geocoding:", error);
+  }
+
+  // Mapeo de código de país a moneda local principal
+  const paisAMoneda = {
+    'CR': 'CRC', 'MX': 'MXN', 'CO': 'COP', 'AR': 'ARS', 'CL': 'CLP', 'PE': 'PEN', 'UY': 'UYU',
+    'ES': 'EUR', 'US': 'USD', 'GT': 'GTQ', 'HN': 'HNL', 'NI': 'NIO', 'SV': 'SVC', 'PA': 'PAB',
+    'DO': 'DOP', 'VE': 'VES', 'EC': 'USD', 'BO': 'BOB', 'PY': 'PYG', 'BR': 'BRL'
+  };
+  
+  const monedaDestino = (resultado.paisCodigo && paisAMoneda[resultado.paisCodigo]) || 'USD';
+  resultado.monedaCodigo = monedaDestino;
+
+  // Clima actual con Open-Meteo API
+  try {
+    const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`);
+    if (resClima.ok) {
+      const dataClima = await resClima.json();
+      if (dataClima.current) {
+        resultado.temperatura = Math.round(dataClima.current.temperature_2m);
+        const weatherCode = dataClima.current.weather_code;
+        
+        // Mapeo de códigos de clima de WMO
+        const codigosClima = {
+          0: { desc: 'Cielo despejado', icon: 'fa-sun' },
+          1: { desc: 'Principalmente despejado', icon: 'fa-cloud-sun' },
+          2: { desc: 'Parcialmente nublado', icon: 'fa-cloud' },
+          3: { desc: 'Nublado', icon: 'fa-cloud' },
+          45: { desc: 'Niebla', icon: 'fa-smog' },
+          48: { desc: 'Niebla de escarcha', icon: 'fa-smog' },
+          51: { desc: 'Llovizna ligera', icon: 'fa-cloud-rain' },
+          53: { desc: 'Llovizna moderada', icon: 'fa-cloud-rain' },
+          55: { desc: 'Llovizna densa', icon: 'fa-cloud-showers-heavy' },
+          61: { desc: 'Lluvia débil', icon: 'fa-cloud-rain' },
+          63: { desc: 'Lluvia moderada', icon: 'fa-cloud-rain' },
+          65: { desc: 'Lluvia fuerte', icon: 'fa-cloud-showers-heavy' },
+          71: { desc: 'Nieve leve', icon: 'fa-snowflake' },
+          73: { desc: 'Nieve moderada', icon: 'fa-snowflake' },
+          75: { desc: 'Nieve fuerte', icon: 'fa-snowflake' },
+          80: { desc: 'Lluvia débil de chubascos', icon: 'fa-cloud-showers-water' },
+          81: { desc: 'Lluvia de chubascos moderada', icon: 'fa-cloud-showers-water' },
+          82: { desc: 'Lluvia de chubascos fuerte', icon: 'fa-cloud-showers-heavy' },
+          95: { desc: 'Tormenta eléctrica', icon: 'fa-cloud-bolt' }
+        };
+        
+        const climaInfo = codigosClima[weatherCode] || { desc: 'Desconocido', icon: 'fa-cloud' };
+        resultado.climaDescripcion = climaInfo.desc;
+        resultado.climaIcono = climaInfo.icon;
+      }
+    }
+  } catch (error) {
+    console.error("Error al obtener clima:", error);
+  }
+
+  // Tipo de cambio: ExchangeRate API
+  if (monedaDestino !== 'USD') {
+    try {
+      const resTasa = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (resTasa.ok) {
+        const dataTasa = await resTasa.json();
+        if (dataTasa.rates && dataTasa.rates[monedaDestino]) {
+          const tasa = dataTasa.rates[monedaDestino];
+          resultado.tasaCambio = `1 USD = ${tasa.toFixed(2)} ${monedaDestino}`;
+        }
+      }
+    } catch (error) {
+      console.error("Error al obtener tasa de cambio:", error);
+    }
+  } else {
+    resultado.tasaCambio = 'Moneda base: USD';
+  }
+
+  return resultado;
+}
+
+// Renderiza los datos locales obtenidos en la UI del Dashboard
+function mostrarDatosLocales(datos) {
+  const localCity = document.getElementById('localCity');
+  const localWeather = document.getElementById('localWeather');
+  const localExchange = document.getElementById('localExchange');
+  const weatherIconContainer = document.getElementById('weatherIconContainer');
+
+  if (localCity) {
+    localCity.textContent = datos.pais ? `${datos.ciudad}, ${datos.pais}` : datos.ciudad;
+  }
+  if (localWeather) {
+    localWeather.textContent = `${datos.temperatura}°C • ${datos.climaDescripcion}`;
+  }
+  if (localExchange) {
+    localExchange.textContent = datos.tasaCambio;
+  }
+  if (weatherIconContainer && datos.climaIcono) {
+    weatherIconContainer.innerHTML = `<i class="fa-solid ${datos.climaIcono}"></i>`;
+  }
+}
+
+// Actualiza texto de la tarjeta
+function actualizarUIEstadoLocal(ciudad, clima, exchange) {
+  const localCity = document.getElementById('localCity');
+  const localWeather = document.getElementById('localWeather');
+  const localExchange = document.getElementById('localExchange');
+  
+  if (localCity) localCity.textContent = ciudad;
+  if (localWeather) localWeather.textContent = clima;
+  if (localExchange) localExchange.textContent = exchange;
+}
+
 function verificarSesion() {
   const usuario = obtenerCookie("usuario");
   const appContainer = document.querySelector(".app");
@@ -304,6 +505,9 @@ function verificarSesion() {
     renderCategorias();
     updateCategoriaSelect(); 
     updateDashboard();
+    
+    // Cargar la información local basada en geolocalización y APIs REST
+    cargarInformacionLocal();
   } else {
     // Ocultar dashboard y mostrar pantalla de login
     if (appContainer) appContainer.style.display = "none";
@@ -331,6 +535,14 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.addEventListener("click", () => {
       if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
         borrarCookie("usuario");
+        
+        // Limpia el cache de información local en sessionStorage al cerrar sesión
+        try {
+          sessionStorage.removeItem('info_local_cache');
+        } catch (e) {
+          console.error("Error al limpiar sessionStorage:", e);
+        }
+        
         // Forzar recarga ligera o verificación directa de sesión
         verificarSesion();
       }
