@@ -563,7 +563,7 @@ if (movCancelBtn) {
   movCancelBtn.addEventListener('click', cancelarEdicion);
 }
 
-// --- MODO OSCURO (DARK MODE) ---
+// MODO OSCURO
 const themeToggle = document.getElementById('themeToggle');
 const body = document.body;
 
