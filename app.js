@@ -50,88 +50,134 @@ let editId = null;
 
 // FUNCIONES DE COOKIES =
 function guardarCookie(nombre, valor, dias) {
-  let fecha = new Date();
-  fecha.setTime(fecha.getTime() + (dias * 24 * 60 * 60 * 1000));
-  document.cookie = `${nombre}=${encodeURIComponent(valor)}; expires=${fecha.toUTCString()}; path=/; SameSite=Lax`;
+  try {
+    let fecha = new Date();
+    fecha.setTime(fecha.getTime() + (dias * 24 * 60 * 60 * 1000));
+    document.cookie = `${nombre}=${encodeURIComponent(valor)}; expires=${fecha.toUTCString()}; path=/; SameSite=Lax`;
+  } catch (error) {
+    console.error("Error al guardar cookie:", error);
+  }
 }
 
 function obtenerCookie(nombre) {
-  let cookies = document.cookie.split(";");
-  for (let cookie of cookies) {
-    let [key, value] = cookie.trim().split("=");
-    if (key === nombre) {
-      return decodeURIComponent(value);
+  try {
+    let cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      let [key, value] = cookie.trim().split("=");
+      if (key === nombre) {
+        return decodeURIComponent(value);
+      }
     }
+  } catch (error) {
+    console.error("Error al obtener cookie:", error);
   }
   return null;
 }
 
 function borrarCookie(nombre) {
-  document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+  try {
+    document.cookie = `${nombre}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+  } catch (error) {
+    console.error("Error al borrar cookie:", error);
+  }
 }
 
 // GESTIÓN DE DATOS POR USUARIO 
 function cargarDatosUsuario() {
-  const usuario = obtenerCookie("usuario");
-  if (usuario) {
-    // Intentar obtener los datos del usuario específico
-    const userCats = localStorage.getItem(`categorias_${usuario}`);
-    const userMovs = localStorage.getItem(`movimientos_${usuario}`);
-    
-    if (userCats && userMovs) {
-      categorias = JSON.parse(userCats);
-      movimientos = JSON.parse(userMovs);
+  try {
+    const usuario = obtenerCookie("usuario");
+    if (usuario) {
+      // Intentar obtener los datos del usuario específico
+      const userCats = localStorage.getItem(`categorias_${usuario}`);
+      const userMovs = localStorage.getItem(`movimientos_${usuario}`);
+      
+      if (userCats && userMovs) {
+        try {
+          categorias = JSON.parse(userCats);
+        } catch (e) {
+          console.error("Error al parsear categorías de localStorage para el usuario, usando por defecto:", e);
+          categorias = [...categoriasPorDefecto];
+        }
+        try {
+          movimientos = JSON.parse(userMovs);
+        } catch (e) {
+          console.error("Error al parsear movimientos de localStorage para el usuario, usando por defecto:", e);
+          movimientos = [...movimientosPorDefecto];
+        }
+      } else {
+        // Si el usuario no tiene datos guardados, migrar/copiar los datos actuales
+        const globalCats = localStorage.getItem('categorias');
+        const globalMovs = localStorage.getItem('movimientos');
+        
+        try {
+          categorias = globalCats ? JSON.parse(globalCats) : [...categoriasPorDefecto];
+        } catch (e) {
+          console.error("Error al parsear categorías globales de localStorage, usando por defecto:", e);
+          categorias = [...categoriasPorDefecto];
+        }
+        try {
+          movimientos = globalMovs ? JSON.parse(globalMovs) : [...movimientosPorDefecto];
+        } catch (e) {
+          console.error("Error al parsear movimientos globales de localStorage, usando por defecto:", e);
+          movimientos = [...movimientosPorDefecto];
+        }
+        
+        // Guardar inmediatamente la copia para el nuevo usuario
+        localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
+        localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
+      }
     } else {
-      // Si el usuario no tiene datos guardados, migrar/copiar los datos actuales
-      const globalCats = localStorage.getItem('categorias');
-      const globalMovs = localStorage.getItem('movimientos');
-      
-      categorias = globalCats ? JSON.parse(globalCats) : categoriasPorDefecto;
-      movimientos = globalMovs ? JSON.parse(globalMovs) : movimientosPorDefecto;
-      
-      // Guardar inmediatamente la copia para el nuevo usuario
-      localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
-      localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
+      categorias = [...categoriasPorDefecto];
+      movimientos = [...movimientosPorDefecto];
     }
-  } else {
+  } catch (error) {
+    console.error("Error general en cargarDatosUsuario:", error);
     categorias = [...categoriasPorDefecto];
     movimientos = [...movimientosPorDefecto];
   }
 }
 
 function inicializarDatos() {
-  cargarDatosUsuario();
-  
-  // Compatibilidad con formatos de IDs antiguos en los datos del usuario
-  let huboCambioMigracion = false;
-  
-  categorias.forEach(c => {
-    if (!c.id) {
-      c.id = `cat-${c.nombre.toLowerCase().replace(/\s+/g, '-')}-${c.tipo}`;
-      huboCambioMigracion = true;
+  try {
+    cargarDatosUsuario();
+    
+    // Compatibilidad con formatos de IDs antiguos en los datos del usuario
+    let huboCambioMigracion = false;
+    
+    if (Array.isArray(categorias)) {
+      categorias.forEach(c => {
+        if (c && !c.id && c.nombre && c.tipo) {
+          c.id = `cat-${c.nombre.toLowerCase().replace(/\s+/g, '-')}-${c.tipo}`;
+          huboCambioMigracion = true;
+        }
+      });
     }
-  });
-  
-  movimientos.forEach((m, index) => {
-    if (!m.id) {
-      m.id = `mov-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`;
-      huboCambioMigracion = true;
+    
+    if (Array.isArray(movimientos)) {
+      movimientos.forEach((m, index) => {
+        if (m && !m.id) {
+          m.id = `mov-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`;
+          huboCambioMigracion = true;
+        }
+        if (m && m.categoria && !m.categoriaId) {
+          const catEncontrada = categorias.find(c => c && c.nombre && c.nombre.toLowerCase() === m.categoria.toLowerCase() && c.tipo === m.tipo);
+          if (catEncontrada) {
+            m.categoriaId = catEncontrada.id;
+          } else {
+            m.categoriaId = `cat-${m.categoria.toLowerCase().replace(/\s+/g, '-')}-${m.tipo}`;
+          }
+          delete m.categoria;
+          huboCambioMigracion = true;
+        }
+      });
     }
-    if (m.categoria && !m.categoriaId) {
-      const catEncontrada = categorias.find(c => c.nombre.toLowerCase() === m.categoria.toLowerCase() && c.tipo === m.tipo);
-      if (catEncontrada) {
-        m.categoriaId = catEncontrada.id;
-      } else {
-        m.categoriaId = `cat-${m.categoria.toLowerCase().replace(/\s+/g, '-')}-${m.tipo}`;
-      }
-      delete m.categoria;
-      huboCambioMigracion = true;
+    
+    if (huboCambioMigracion) {
+      saveCategorias();
+      saveMovimientos();
     }
-  });
-  
-  if (huboCambioMigracion) {
-    saveCategorias();
-    saveMovimientos();
+  } catch (error) {
+    console.error("Error en inicializarDatos:", error);
   }
 }
 
@@ -409,20 +455,32 @@ function updateDashboard() {
 
 // PERSISTENCIA CON LOCAL STORAGE
 function saveCategorias() {
-   const usuario = obtenerCookie("usuario");
-  if (usuario) {
-    localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
-  } else {
-    localStorage.setItem('categorias', JSON.stringify(categorias));
+  try {
+    const usuario = obtenerCookie("usuario");
+    const serializedCats = JSON.stringify(categorias);
+    if (usuario) {
+      localStorage.setItem(`categorias_${usuario}`, serializedCats);
+    } else {
+      localStorage.setItem('categorias', serializedCats);
+    }
+  } catch (error) {
+    console.error("Error al guardar categorías en LocalStorage:", error);
+    alert("No se pudieron guardar las categorías. Es posible que el almacenamiento local esté lleno o deshabilitado.");
   }
 }
 
 function saveMovimientos() {
-  const usuario = obtenerCookie("usuario");
-  if (usuario) {
-    localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
-  } else {
-    localStorage.setItem('movimientos', JSON.stringify(movimientos));
+  try {
+    const usuario = obtenerCookie("usuario");
+    const serializedMovs = JSON.stringify(movimientos);
+    if (usuario) {
+      localStorage.setItem(`movimientos_${usuario}`, serializedMovs);
+    } else {
+      localStorage.setItem('movimientos', serializedMovs);
+    }
+  } catch (error) {
+    console.error("Error al guardar movimientos en LocalStorage:", error);
+    alert("No se pudieron guardar los movimientos. Es posible que el almacenamiento local esté lleno o deshabilitado.");
   }
 }
 
@@ -563,56 +621,60 @@ const movimientoForm = document.getElementById('movimientoForm');
 if (movimientoForm) {
   movimientoForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    
-    const tipo = document.getElementById('tipo').value;
-    const monto = parseFloat(document.getElementById('monto').value);
-    const categoriaId = document.getElementById('categoria').value;
-    const fecha = document.getElementById('fecha').value;
-    const descripcion = document.getElementById('descripcion').value.trim();
-    
-    if (isNaN(monto) || monto <= 0) {
-      alert('Por favor, ingresa un monto válido mayor a 0.');
-      return;
-    }
-    
-    if (!categoriaId) {
-      alert('Por favor, selecciona una categoría. Si no hay, crea una primero.');
-      return;
-    }
-    
-    const datosMovimiento = {
-      tipo,
-      monto,
-      categoriaId,
-      fecha,
-      descripcion: descripcion || ''
-    };
-    
-    if (editId !== null) {
-      // Guardar edición
-      const idx = movimientos.findIndex(m => m.id === editId);
-      if (idx !== -1) {
-        movimientos[idx] = { id: editId, ...datosMovimiento };
-        saveMovimientos();
-      }
-      cancelarEdicion();
-    } else {
-      // Agregar nuevo
-      const nuevoMovimiento = {
-        id: `mov-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        ...datosMovimiento
-      };
-      movimientos.unshift(nuevoMovimiento);
-      saveMovimientos();
+    try {
+      const tipo = document.getElementById('tipo').value;
+      const monto = parseFloat(document.getElementById('monto').value);
+      const categoriaId = document.getElementById('categoria').value;
+      const fecha = document.getElementById('fecha').value;
+      const descripcion = document.getElementById('descripcion').value.trim();
       
-      // Limpiar campos del formulario
-      document.getElementById('monto').value = '';
-      document.getElementById('descripcion').value = '';
+      if (isNaN(monto) || monto <= 0) {
+        alert('Por favor, ingresa un monto válido mayor a 0.');
+        return;
+      }
+      
+      if (!categoriaId) {
+        alert('Por favor, selecciona una categoría. Si no hay, crea una primero.');
+        return;
+      }
+      
+      const datosMovimiento = {
+        tipo,
+        monto,
+        categoriaId,
+        fecha,
+        descripcion: descripcion || ''
+      };
+      
+      if (editId !== null) {
+        // Guardar edición
+        const idx = movimientos.findIndex(m => m.id === editId);
+        if (idx !== -1) {
+          movimientos[idx] = { id: editId, ...datosMovimiento };
+          saveMovimientos();
+        }
+        cancelarEdicion();
+      } else {
+        // Agregar nuevo
+        const nuevoMovimiento = {
+          id: `mov-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          ...datosMovimiento
+        };
+        movimientos.unshift(nuevoMovimiento);
+        saveMovimientos();
+        
+        // Limpiar campos del formulario
+        document.getElementById('monto').value = '';
+        document.getElementById('descripcion').value = '';
+      }
+      
+      renderMovimientos();
+      renderCategorias(); // Para actualizar los contadores
+      updateDashboard();
+    } catch (error) {
+      console.error("Error en submit del formulario de movimiento:", error);
+      alert("Ocurrió un error inesperado al procesar el movimiento.");
     }
-    
-    renderMovimientos();
-    renderCategorias(); // Para actualizar los contadores
-    updateDashboard();
   });
 }
 
@@ -620,42 +682,46 @@ const categoriaForm = document.getElementById('categoriaForm');
 if (categoriaForm) {
   categoriaForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    
-    const nombreInput = document.getElementById('catNombre');
-    const tipoInput = document.getElementById('catTipo');
-    const colorInput = document.getElementById('catColor');
-    
-    const nombre = nombreInput.value.trim();
-    const tipo = tipoInput.value;
-    const color = colorInput.value;
-    
-    if (!nombre) {
-      alert('Por favor, ingresa un nombre para la categoría.');
-      return;
+    try {
+      const nombreInput = document.getElementById('catNombre');
+      const tipoInput = document.getElementById('catTipo');
+      const colorInput = document.getElementById('catColor');
+      
+      const nombre = nombreInput.value.trim();
+      const tipo = tipoInput.value;
+      const color = colorInput.value;
+      
+      if (!nombre) {
+        alert('Por favor, ingresa un nombre para la categoría.');
+        return;
+      }
+      
+      // Validar duplicado por nombre y tipo
+      const existe = categorias.some(c => c.nombre.toLowerCase() === nombre.toLowerCase() && c.tipo === tipo);
+      if (existe) {
+        alert(`Ya existe una categoría de tipo "${tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}" llamada "${nombre}".`);
+        return;
+      }
+      
+      const nuevaCategoria = {
+        id: `cat-${nombre.toLowerCase().replace(/\s+/g, '-')}-${tipo}`,
+        nombre,
+        color,
+        tipo
+      };
+      categorias.push(nuevaCategoria);
+      saveCategorias();
+      
+      renderCategorias();
+      updateCategoriaSelect(); 
+      
+      // Resetear formulario
+      nombreInput.value = '';
+      colorInput.value = '#3b82f6';
+    } catch (error) {
+      console.error("Error en submit del formulario de categoría:", error);
+      alert("Ocurrió un error inesperado al crear la categoría.");
     }
-    
-    // Validar duplicado por nombre y tipo
-    const existe = categorias.some(c => c.nombre.toLowerCase() === nombre.toLowerCase() && c.tipo === tipo);
-    if (existe) {
-      alert(`Ya existe una categoría de tipo "${tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}" llamada "${nombre}".`);
-      return;
-    }
-    
-    const nuevaCategoria = {
-      id: `cat-${nombre.toLowerCase().replace(/\s+/g, '-')}-${tipo}`,
-      nombre,
-      color,
-      tipo
-    };
-    categorias.push(nuevaCategoria);
-    saveCategorias();
-    
-    renderCategorias();
-    updateCategoriaSelect(); 
-    
-    // Resetear formulario
-    nombreInput.value = '';
-    colorInput.value = '#3b82f6';
   });
 }
 
@@ -685,8 +751,13 @@ if (movCancelBtn) {
 const themeToggle = document.getElementById('themeToggle');
 const body = document.body;
 
-// Cargar tema guardado o usar preferencia del sistema
-const temaGuardado = localStorage.getItem('tema') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+// Cargar tema guardado o preferente del sistema
+let temaGuardado = 'light';
+try {
+  temaGuardado = localStorage.getItem('tema') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+} catch (error) {
+  console.error("Error al obtener tema de localStorage:", error);
+}
 
 if (temaGuardado === 'dark') {
   body.classList.add('dark-mode');
@@ -705,7 +776,11 @@ if (themeToggle) {
   themeToggle.addEventListener('click', () => {
     body.classList.toggle('dark-mode');
     const esModoOscuro = body.classList.contains('dark-mode');
-    localStorage.setItem('tema', esModoOscuro ? 'dark' : 'light');
+    try {
+      localStorage.setItem('tema', esModoOscuro ? 'dark' : 'light');
+    } catch (error) {
+      console.error("Error al guardar tema en localStorage:", error);
+    }
     
     // Cambia icono y tooltip 
     if (esModoOscuro) {
