@@ -4,43 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control Financiero</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
+
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
+        <i class="fa-solid fa-wallet"></i>
         <span>Control</span>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-item active">
+        <div class="nav-item active" data-section="dashboard">
+          <i class="fa-solid fa-chart-pie"></i>
           <span>Dashboard</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-section="movimientos">
+          <i class="fa-solid fa-money-bill-transfer"></i>
           <span>Movimientos</span>
         </div>
-        <div class="nav-item">
+        <div class="nav-item" data-section="categorias">
+          <i class="fa-solid fa-tags"></i>
           <span>Categorías</span>
         </div>
       </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
     </aside>
 
     <main class="main">
       <header class="header">
         <h1>Dashboard</h1>
         <div class="header-actions">
-          <div class="btn-icon">
-          </div>
+          <button id="themeToggle" class="theme-toggle-btn" title="Cambiar tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
           <div class="header-user">
-            <div class="btn-icon">
-            </div>
-            <div class="header-avatar">
-            </div>
+            <span class="header-user-name">Usuario</span>
+            <div class="header-avatar">U</div>
           </div>
         </div>
       </header>
 
-      <section class="section active">
+      <section class="section active" id="section-dashboard">
         <div class="balance-card">
           <div class="balance-info">
             <span class="balance-label">Balance Total</span>
@@ -48,12 +59,14 @@
             <span class="balance-period">Período actual</span>
           </div>
           <div class="balance-icon">
+            <i class="fa-solid fa-scale-balanced"></i>
           </div>
         </div>
 
         <div class="stats-grid">
           <div class="stat-card stat-income">
             <div class="stat-icon">
+              <i class="fa-solid fa-arrow-trend-up"></i>
             </div>
             <div class="stat-body">
               <span class="stat-label">Ingresos</span>
@@ -62,6 +75,7 @@
           </div>
           <div class="stat-card stat-expense">
             <div class="stat-icon">
+              <i class="fa-solid fa-arrow-trend-down"></i>
             </div>
             <div class="stat-body">
               <span class="stat-label">Gastos</span>
@@ -70,6 +84,7 @@
           </div>
           <div class="stat-card stat-count">
             <div class="stat-icon">
+              <i class="fa-solid fa-receipt"></i>
             </div>
             <div class="stat-body">
               <span class="stat-label">Transacciones</span>
@@ -81,27 +96,184 @@
         <div class="dashboard-grid">
           <div class="card chart-card">
             <div class="card-header">
-              <h3> Gastos por Categoría</h3>
+              <h3><i class="fa-solid fa-chart-column"></i> Gastos por Categoría</h3>
             </div>
-            <div class="card-body empty-container">
-              <span class="empty-title">Sin gastos</span>
-              <span class="empty-subtitle">No hay datos de gastos.</span>
+            <div class="card-body" id="gastosPorCategoriaContainer" style="padding: 20px;">
+              <div class="empty-container" id="emptyGastos">
+                <span class="empty-title">Sin gastos</span>
+                <span class="empty-subtitle">No hay datos de gastos.</span>
+              </div>
+              <div class="category-summary-list" id="gastosPorCategoriaList" style="display: none;">
+                <!-- Barra -->
+              </div>
             </div>
           </div>
           <div class="card recent-card">
             <div class="card-header">
-              <h3>Movimientos Recientes</h3>
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> Movimientos Recientes</h3>
             </div>
-            <div class="card-body empty-container">
-              <p class="empty-state">
-                </i> Sin movimientos recientes.
-              </p>
+            <div class="card-body" id="recentMovementsContainer" style="padding: 20px;">
+              <div class="empty-container" id="emptyRecent">
+                <p class="empty-state">Sin movimientos recientes.</p>
+              </div>
+              <div class="recent-list" id="recentMovementsList" style="display: none;">
+                <!-- Acá se muestran los movimientos recientes -->
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      <section class="section" id="section-movimientos">
+        <div class="card form-card">
+          <div class="card-header">
+            <h3 id="movFormTitle"><i class="fa-solid fa-plus-minus"></i> Nuevo Movimiento</h3>
+          </div>
+          <div class="card-body" style="padding: 20px;">
+            <form id="movimientoForm" class="movimiento-form" onsubmit="event.preventDefault();">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipo">Tipo</label>
+                  <select id="tipo" required>
+                    <option value="gasto">Gasto</option>
+                    <option value="ingreso">Ingreso</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="monto">Monto</label>
+                  <input type="number" id="monto" step="0.01" min="0.01" placeholder="0.00" required />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="categoria">Categoría</label>
+                  <select id="categoria" required>
+                    <option value="Alimentación">Alimentación</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Salario">Salario</option>
+                    <option value="Vivienda">Vivienda</option>
+                    <option value="Entretenimiento">Entretenimiento</option>
+                    <option value="Salud">Salud</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="fecha">Fecha</label>
+                  <input type="date" id="fecha" value="2026-06-06" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="descripcion">Descripción</label>
+                <input type="text" id="descripcion" placeholder="Descripción del movimiento" />
+              </div>
+              <div class="form-actions" style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary" id="movSubmitBtn">
+                  Agregar Movimiento
+                </button>
+                <button type="button" class="btn" id="movCancelBtn" style="display: none; background: var(--border); color: var(--text);">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-list"></i> Todos los Movimientos</h3>
+            <span class="badge" id="movementBadge">0</span>
+          </div>
+          <div class="card-body table-wrapper" style="padding: 20px;">
+            <table class="table" id="movimientosTable">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Monto</th>
+                  <th>Categoría</th>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="movimientosBody"></tbody>
+            </table>
+            <p class="empty-state" id="emptyMovimientos">
+              No hay movimientos registrados.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-categorias">
+        <!-- Para añadir categogías-->
+        <div class="card form-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-folder-plus"></i> Nueva Categoría</h3>
+          </div>
+          <div class="card-body" style="padding: 20px;">
+            <form id="categoriaForm" class="categoria-form" onsubmit="event.preventDefault();">
+              <div class="form-group">
+                <label for="catNombre">Nombre de la Categoría</label>
+                <input type="text" id="catNombre" placeholder="Ej. Compra, venta..." required />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="catTipo">Tipo de Categoría</label>
+                  <select id="catTipo" required>
+                    <option value="gasto">Gasto</option>
+                    <option value="ingreso">Ingreso</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="catColor">Color</label>
+                  <input type="color" id="catColor" value="#3b82f6" style="padding: 2px; height: 44px; width: 44px; cursor: pointer; border-radius: var(--radius-sm); border: 1.5px solid var(--border);" required />
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top: 16px;">
+                <button type="submit" class="btn btn-primary">
+                  Agregar Categoría
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Lista de catregorías -->
+        <div class="card list-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-list"></i> Categorías Existentes</h3>
+            <span class="badge" id="categoryBadge">0</span>
+          </div>
+          <div class="card-body" style="padding: 20px;">
+            <div class="categories-list" id="categoriasList">
+              <!-- Lista dinámica -->
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
+
+<!-- Pantalla de Inicio de Sesión  -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <i class="fa-solid fa-wallet"></i>
+        <h2>Control Financiero</h2>
+      </div>
+      <p class="login-subtitle">Gestiona tus ingresos y gastos</p>
+      <form id="loginForm" class="login-form" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="loginUsuario">Nombre de Usuario</label>
+          <input type="text" id="loginUsuario" placeholder="Ingresa tu nombre para comenzar" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+          Ingresar <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 4px;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
