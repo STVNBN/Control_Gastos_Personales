@@ -29,12 +29,21 @@
           <span>Categorías</span>
         </div>
       </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Cerrar Sesión</span>
+        </button>
+      </div>
     </aside>
 
     <main class="main">
       <header class="header">
         <h1>Dashboard</h1>
         <div class="header-actions">
+          <button id="themeToggle" class="theme-toggle-btn" title="Cambiar tema">
+            <i class="fa-solid fa-moon"></i>
+          </button>
           <div class="header-user">
             <span class="header-user-name">Usuario</span>
             <div class="header-avatar">U</div>
@@ -118,7 +127,7 @@
       <section class="section" id="section-movimientos">
         <div class="card form-card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-plus-minus"></i> Nuevo Movimiento</h3>
+            <h3 id="movFormTitle"><i class="fa-solid fa-plus-minus"></i> Nuevo Movimiento</h3>
           </div>
           <div class="card-body" style="padding: 20px;">
             <form id="movimientoForm" class="movimiento-form" onsubmit="event.preventDefault();">
@@ -156,9 +165,12 @@
                 <label for="descripcion">Descripción</label>
                 <input type="text" id="descripcion" placeholder="Descripción del movimiento" />
               </div>
-              <div class="form-actions">
+              <div class="form-actions" style="display: flex; gap: 10px;">
                 <button type="submit" class="btn btn-primary" id="movSubmitBtn">
                   Agregar Movimiento
+                </button>
+                <button type="button" class="btn" id="movCancelBtn" style="display: none; background: var(--border); color: var(--text);">
+                  Cancelar
                 </button>
               </div>
             </form>
@@ -179,6 +191,7 @@
                   <th>Categoría</th>
                   <th>Fecha</th>
                   <th>Descripción</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody id="movimientosBody"></tbody>
@@ -200,7 +213,7 @@
             <form id="categoriaForm" class="categoria-form" onsubmit="event.preventDefault();">
               <div class="form-group">
                 <label for="catNombre">Nombre de la Categoría</label>
-                <input type="text" id="catNombre" placeholder="Ej. Regalos, Servicios..." required />
+                <input type="text" id="catNombre" placeholder="Ej. Compra, venta..." required />
               </div>
               <div class="form-row">
                 <div class="form-group">
@@ -240,6 +253,27 @@
 
     </main>
   </div>
+
+<!-- Pantalla de Inicio de Sesión  -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <i class="fa-solid fa-wallet"></i>
+        <h2>Control Financiero</h2>
+      </div>
+      <p class="login-subtitle">Gestiona tus ingresos y gastos</p>
+      <form id="loginForm" class="login-form" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="loginUsuario">Nombre de Usuario</label>
+          <input type="text" id="loginUsuario" placeholder="Ingresa tu nombre para comenzar" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+          Ingresar <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 4px;"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
