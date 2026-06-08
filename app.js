@@ -28,12 +28,7 @@ const categoriasPorDefecto = [
   { id: 'cat-salud-gasto', nombre: 'Salud', color: '#ec4899', tipo: 'gasto' }
 ];
 
-const movimientosPorDefecto = [
-  { id: 'mov-1', tipo: 'ingreso', monto: 1500.00, categoriaId: 'cat-salario-ingreso', fecha: '2026-06-05', descripcion: 'Salario Mensual' },
-  { id: 'mov-2', tipo: 'gasto', monto: 150.00, categoriaId: 'cat-alimentacion-gasto', fecha: '2026-06-05', descripcion: 'Supermercado quincenal' },
-  { id: 'mov-3', tipo: 'gasto', monto: 35.50, categoriaId: 'cat-transporte-gasto', fecha: '2026-06-04', descripcion: 'Combustible semanal' },
-  { id: 'mov-4', tipo: 'gasto', monto: 120.00, categoriaId: 'cat-vivienda-gasto', fecha: '2026-06-03', descripcion: 'Pago de Internet' }
-];
+const movimientosPorDefecto = [];
 
 // Variables globales para los datos del usuario activo
 let categorias = [];
@@ -47,6 +42,7 @@ const catList = document.getElementById('categoriasList');
 const catBadge = document.getElementById('categoryBadge');
 
 let editId = null;
+let dashboardWorker = null;
 
 // FUNCIONES DE COOKIES =
 function guardarCookie(nombre, valor, dias) {
@@ -105,24 +101,11 @@ function cargarDatosUsuario() {
           movimientos = [...movimientosPorDefecto];
         }
       } else {
-        // Si el usuario no tiene datos guardados, migrar/copiar los datos actuales
-        const globalCats = localStorage.getItem('categorias');
-        const globalMovs = localStorage.getItem('movimientos');
+        // Si el usuario nuevo no tiene datos, inicializar con las categorías por defecto y la lista de movimientos vacía
+        categorias = [...categoriasPorDefecto];
+        movimientos = [];
         
-        try {
-          categorias = globalCats ? JSON.parse(globalCats) : [...categoriasPorDefecto];
-        } catch (e) {
-          console.error("Error al parsear categorías globales de localStorage, usando por defecto:", e);
-          categorias = [...categoriasPorDefecto];
-        }
-        try {
-          movimientos = globalMovs ? JSON.parse(globalMovs) : [...movimientosPorDefecto];
-        } catch (e) {
-          console.error("Error al parsear movimientos globales de localStorage, usando por defecto:", e);
-          movimientos = [...movimientosPorDefecto];
-        }
-        
-        // Guardar inmediatamente la copia para el nuevo usuario
+        // Guardar inmediatamente los datos iniciales para el usuario
         localStorage.setItem(`categorias_${usuario}`, JSON.stringify(categorias));
         localStorage.setItem(`movimientos_${usuario}`, JSON.stringify(movimientos));
       }
@@ -468,7 +451,7 @@ function mostrarDatosLocales(datos) {
   }
 }
 
-// Actualiza texto de la tarjeta
+// Actualiza el texto de la tarjeta
 function actualizarUIEstadoLocal(ciudad, clima, exchange) {
   const localCity = document.getElementById('localCity');
   const localWeather = document.getElementById('localWeather');
@@ -479,84 +462,28 @@ function actualizarUIEstadoLocal(ciudad, clima, exchange) {
   if (localExchange) localExchange.textContent = exchange;
 }
 
-function verificarSesion() {
-  const usuario = obtenerCookie("usuario");
-  const appContainer = document.querySelector(".app");
-  const loginScreen = document.getElementById("loginScreen");
-  const headerUserName = document.querySelector(".header-user-name");
-  const headerAvatar = document.querySelector(".header-avatar");
-
-  if (usuario) {
-    // Cargar y migrar datos del usuario
-    inicializarDatos();
-    
-    // Ocultar login y mostrar dashboard
-    if (loginScreen) loginScreen.style.display = "none";
-    if (appContainer) appContainer.style.display = "flex";
-    
-    // Actualizar datos de usuario en la UI
-    if (headerUserName) headerUserName.textContent = usuario;
-    if (headerAvatar) {
-      headerAvatar.textContent = usuario.charAt(0).toUpperCase();
+// Inicializa el Web Worker para el procesamiento de estadísticas
+function inicializarWorker() {
+  if (typeof(Worker) !== "undefined") {
+    if (!dashboardWorker) {
+      dashboardWorker = new Worker("dashboardWorker.js");
+      dashboardWorker.onmessage = function(e) {
+        if (e.data.error) {
+          console.error("Error en Web Worker:", e.data.error);
+          return;
+        }
+        
+        const { ingresos, gastos, balance, totalTransacciones, gastosOrdenados, recentMovs } = e.data;
+        actualizarUIDashboard(ingresos, gastos, balance, totalTransacciones, gastosOrdenados, recentMovs);
+      };
     }
-
-    // Renderizar la UI
-    renderMovimientos();
-    renderCategorias();
-    updateCategoriaSelect(); 
-    updateDashboard();
-    
-    // Cargar la información local basada en geolocalización y APIs REST
-    cargarInformacionLocal();
   } else {
-    // Ocultar dashboard y mostrar pantalla de login
-    if (appContainer) appContainer.style.display = "none";
-    if (loginScreen) loginScreen.style.display = "flex";
+    console.warn("Web Workers no son soportados en este navegador. El procesamiento se hará en el hilo principal.");
   }
 }
 
-// Configuración de event listeners para el Login y Logout
-document.addEventListener("DOMContentLoaded", () => {
-  const loginForm = document.getElementById("loginForm");
-  if (loginForm) {
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const loginUsuario = document.getElementById("loginUsuario").value.trim();
-      if (loginUsuario) {
-        guardarCookie("usuario", loginUsuario, 7); // Guardar por 7 días
-        verificarSesion();
-        document.getElementById("loginUsuario").value = "";
-      }
-    });
-  }
-
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        borrarCookie("usuario");
-        
-        // Limpia el cache de información local en sessionStorage al cerrar sesión
-        try {
-          sessionStorage.removeItem('info_local_cache');
-        } catch (e) {
-          console.error("Error al limpiar sessionStorage:", e);
-        }
-        
-        // Forzar recarga ligera o verificación directa de sesión
-        verificarSesion();
-      }
-    });
-  }
-});
-
-// Calculo del dashboard
-function updateDashboard() {
-  const ingresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + m.monto, 0);
-  const gastos = movimientos.filter(m => m.tipo === 'gasto').reduce((sum, m) => sum + m.monto, 0);
-  const balance = ingresos - gastos;
-  const totalTransacciones = movimientos.length;
-
+// Actualiza la UI del Dashboard con los datos calculados por el Web Worker
+function actualizarUIDashboard(ingresos, gastos, balance, totalTransacciones, gastosOrdenados, recentMovs) {
   // Actualizar Balance
   const balanceAmountEl = document.querySelector('.balance-amount');
   if (balanceAmountEl) {
@@ -586,24 +513,6 @@ function updateDashboard() {
   // Gastos por Categoría
   const emptyGastos = document.getElementById('emptyGastos');
   const gastosList = document.getElementById('gastosPorCategoriaList');
-  const totalGastos = gastos;
-  const gastosPorCat = {};
-
-  movimientos.filter(m => m.tipo === 'gasto').forEach(m => {
-    gastosPorCat[m.categoriaId] = (gastosPorCat[m.categoriaId] || 0) + m.monto;
-  });
-
-  const gastosOrdenados = Object.keys(gastosPorCat).map(catId => {
-    const cat = categorias.find(c => c.id === catId);
-    const nombre = cat ? cat.nombre : 'Sin categoría';
-    const color = cat ? cat.color : '#cbd5e1';
-    return {
-      nombre,
-      monto: gastosPorCat[catId],
-      color,
-      pct: totalGastos > 0 ? (gastosPorCat[catId] / totalGastos) * 100 : 0
-    };
-  }).sort((a, b) => b.monto - a.monto);
 
   if (gastosOrdenados.length === 0 || !gastosList) {
     if (emptyGastos) emptyGastos.style.display = 'flex';
@@ -629,7 +538,6 @@ function updateDashboard() {
   // Movimientos Recientes
   const emptyRecent = document.getElementById('emptyRecent');
   const recentList = document.getElementById('recentMovementsList');
-  const recentMovs = [...movimientos].slice(0, 5);
 
   if (recentMovs.length === 0 || !recentList) {
     if (emptyRecent) emptyRecent.style.display = 'flex';
@@ -642,17 +550,14 @@ function updateDashboard() {
         const sign = m.tipo === 'ingreso' ? '+' : '-';
         const color = m.tipo === 'ingreso' ? 'var(--income)' : 'var(--expense)';
         const amountFormatted = `$${m.monto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        const cat = categorias.find(c => c.id === m.categoriaId);
-        const catColor = cat ? cat.color : '#6b7280';
-        const catNombre = cat ? cat.nombre : 'Sin categoría';
         
         return `
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="background: ${catColor}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+              <span style="background: ${m.catColor}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
               <div>
-                <div style="font-weight: 600; font-size: 0.88rem; color: var(--text);">${m.descripcion || catNombre}</div>
-                <div style="font-size: 0.72rem; color: var(--text-secondary);">${m.fecha} • ${catNombre}</div>
+                <div style="font-weight: 600; font-size: 0.88rem; color: var(--text);">${m.descripcion || m.catNombre}</div>
+                <div style="font-size: 0.72rem; color: var(--text-secondary);">${m.fecha} • ${m.catNombre}</div>
               </div>
             </div>
             <div style="font-weight: 700; color: ${color}; font-size: 0.88rem;">
@@ -662,6 +567,261 @@ function updateDashboard() {
         `;
       }).join('');
     }
+  }
+}
+
+function verificarSesion() {
+  const usuario = obtenerCookie("usuario");
+  const appContainer = document.querySelector(".app");
+  const loginScreen = document.getElementById("loginScreen");
+  const headerUserName = document.querySelector(".header-user-name");
+  const headerAvatar = document.querySelector(".header-avatar");
+
+  if (usuario) {
+    // Cargar y migrar datos del usuario
+    inicializarDatos();
+    
+    // Ocultar login y mostrar dashboard
+    if (loginScreen) loginScreen.style.display = "none";
+    if (appContainer) appContainer.style.display = "flex";
+    
+    // Actualizar datos de usuario en la UI
+    if (headerUserName) headerUserName.textContent = usuario;
+    if (headerAvatar) {
+      headerAvatar.textContent = usuario.charAt(0).toUpperCase();
+    }
+
+    // Renderizar la UI
+    renderMovimientos();
+    renderCategorias();
+    updateCategoriaSelect(); 
+    inicializarWorker();
+    updateDashboard();
+    
+    // Carga la información local basada en geolocalización y APIs REST
+    cargarInformacionLocal();
+  } else {
+    // Ocultar dashboard y mostrar pantalla de login
+    if (appContainer) appContainer.style.display = "none";
+    if (loginScreen) loginScreen.style.display = "flex";
+  }
+}
+
+// Configuración de event listeners para el Login, Registro y Logout
+document.addEventListener("DOMContentLoaded", () => {
+  // Manejo de pestañas de inicio de sesión / registro
+  const tabLogin = document.getElementById("tabLogin");
+  const tabRegister = document.getElementById("tabRegister");
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+
+  if (tabLogin && tabRegister && loginForm && registerForm) {
+    tabLogin.addEventListener("click", () => {
+      tabLogin.classList.add("active");
+      tabRegister.classList.remove("active");
+      loginForm.style.display = "flex";
+      registerForm.style.display = "none";
+    });
+
+    tabRegister.addEventListener("click", () => {
+      tabRegister.classList.add("active");
+      tabLogin.classList.remove("active");
+      registerForm.style.display = "flex";
+      loginForm.style.display = "none";
+    });
+  }
+
+  // Formulario de Inicio de Sesión
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      try {
+        const usernameOrEmail = document.getElementById("loginUsuario").value.trim();
+        const clave = document.getElementById("loginClave").value;
+
+        if (!usernameOrEmail || !clave) {
+          alert("Por favor, ingresa tu usuario/correo y contraseña.");
+          return;
+        }
+
+        // Obtener usuarios registrados
+        let usuarios = [];
+        try {
+          const stored = localStorage.getItem("usuarios_registrados");
+          usuarios = stored ? JSON.parse(stored) : [];
+        } catch (err) {
+          console.error("Error al leer usuarios de localStorage:", err);
+        }
+
+        // Buscar coincidencia (por nombre de usuario o por correo electrónico)
+        const usuarioValido = usuarios.find(u => 
+          (u.usuario.toLowerCase() === usernameOrEmail.toLowerCase() || 
+          (u.correo && u.correo.toLowerCase() === usernameOrEmail.toLowerCase())) && 
+          u.clave === clave
+        );
+
+        if (usuarioValido) {
+          guardarCookie("usuario", usuarioValido.usuario, 7); // Guardar sesión por 7 días
+          verificarSesion();
+          document.getElementById("loginUsuario").value = "";
+          document.getElementById("loginClave").value = "";
+        } else {
+          alert("Nombre de usuario/correo o contraseña incorrectos.");
+        }
+      } catch (err) {
+        console.error("Error en submit de login:", err);
+        alert("Ocurrió un error al iniciar sesión.");
+      }
+    });
+  }
+
+  // Formulario de Registro
+  if (registerForm) {
+    registerForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      try {
+        const username = document.getElementById("regUsuario").value.trim();
+        const correo = document.getElementById("regCorreo").value.trim();
+        const clave = document.getElementById("regClave").value;
+
+        if (!username || !correo || !clave) {
+          alert("Por favor, rellena todos los campos.");
+          return;
+        }
+
+        // Validar formato del correo
+        const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!regexCorreo.test(correo)) {
+          alert("Por favor, ingresa un correo electrónico válido.");
+          return;
+        }
+
+        if (clave.length < 4) {
+          alert("La contraseña debe tener al menos 4 caracteres.");
+          return;
+        }
+
+        // Obtener usuarios registrados
+        let usuarios = [];
+        try {
+          const stored = localStorage.getItem("usuarios_registrados");
+          usuarios = stored ? JSON.parse(stored) : [];
+        } catch (err) {
+          console.error("Error al leer usuarios:", err);
+        }
+
+        // Verificar si ya existe el usuario
+        const existeUsuario = usuarios.some(u => u.usuario.toLowerCase() === username.toLowerCase());
+        if (existeUsuario) {
+          alert(`El nombre de usuario "${username}" ya está registrado.`);
+          return;
+        }
+
+        // Verificar si ya existe el correo
+        const existeCorreo = usuarios.some(u => u.correo && u.correo.toLowerCase() === correo.toLowerCase());
+        if (existeCorreo) {
+          alert(`El correo electrónico "${correo}" ya está registrado.`);
+          return;
+        }
+
+        // Registrar
+        usuarios.push({ usuario: username, correo: correo, clave: clave });
+        try {
+          localStorage.setItem("usuarios_registrados", JSON.stringify(usuarios));
+        } catch (err) {
+          console.error("Error al guardar usuario en localStorage:", err);
+          alert("No se pudo registrar el usuario en LocalStorage.");
+          return;
+        }
+
+        alert("¡Registro exitoso! Ahora puedes iniciar sesión.");
+        
+        // Limpiar formulario de registro
+        document.getElementById("regUsuario").value = "";
+        document.getElementById("regCorreo").value = "";
+        document.getElementById("regClave").value = "";
+
+        // Cambiar a la pestaña de login e introducir el usuario creado
+        tabLogin.click();
+        document.getElementById("loginUsuario").value = username;
+        document.getElementById("loginClave").focus();
+      } catch (err) {
+        console.error("Error en submit de registro:", err);
+        alert("Ocurrió un error durante el registro.");
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+        borrarCookie("usuario");
+        
+        // Limpia el cache de información local en sessionStorage al cerrar sesión
+        try {
+          sessionStorage.removeItem('info_local_cache');
+        } catch (e) {
+          console.error("Error al limpiar sessionStorage:", e);
+        }
+        
+        // Terminar el Web Worker si existe
+        if (dashboardWorker) {
+          dashboardWorker.terminate();
+          dashboardWorker = null;
+        }
+
+        // Forzar recarga ligera o verificación directa de sesión
+        verificarSesion();
+      }
+    });
+  }
+});
+
+// Cálculo del dashboard delegando al Web Worker 
+function updateDashboard() {
+  if (dashboardWorker) {
+    // Enviar datos al Web Worker para su procesamiento asíncrono
+    dashboardWorker.postMessage({ movimientos, categorias });
+  } else {
+    // Fallback síncrono si los Web Workers no son soportados por el navegador
+    const ingresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + m.monto, 0);
+    const gastos = movimientos.filter(m => m.tipo === 'gasto').reduce((sum, m) => sum + m.monto, 0);
+    const balance = ingresos - gastos;
+    const totalTransacciones = movimientos.length;
+
+    const totalGastos = gastos;
+    const gastosPorCat = {};
+    movimientos.filter(m => m.tipo === 'gasto').forEach(m => {
+      gastosPorCat[m.categoriaId] = (gastosPorCat[m.categoriaId] || 0) + m.monto;
+    });
+
+    const gastosOrdenados = Object.keys(gastosPorCat).map(catId => {
+      const cat = categorias.find(c => c.id === catId);
+      const nombre = cat ? cat.nombre : 'Sin categoría';
+      const color = cat ? cat.color : '#cbd5e1';
+      return {
+        nombre,
+        monto: gastosPorCat[catId],
+        color,
+        pct: totalGastos > 0 ? (gastosPorCat[catId] / totalGastos) * 100 : 0
+      };
+    }).sort((a, b) => b.monto - a.monto);
+
+    const recentMovs = [...movimientos].slice(0, 5).map(m => {
+      const cat = categorias.find(c => c.id === m.categoriaId);
+      return {
+        id: m.id,
+        tipo: m.tipo,
+        monto: m.monto,
+        fecha: m.fecha,
+        descripcion: m.descripcion,
+        catNombre: cat ? cat.nombre : 'Sin categoría',
+        catColor: cat ? cat.color : '#6b7280'
+      };
+    });
+
+    actualizarUIDashboard(ingresos, gastos, balance, totalTransacciones, gastosOrdenados, recentMovs);
   }
 }
 

@@ -297,13 +297,43 @@
         <h2>Control Financiero</h2>
       </div>
       <p class="login-subtitle">Gestiona tus ingresos y gastos</p>
+      
+      <div class="login-tabs">
+        <button type="button" id="tabLogin" class="login-tab active">Ingresar</button>
+        <button type="button" id="tabRegister" class="login-tab">Registrarse</button>
+      </div>
+
+      <!-- Formulario de Iniciar Sesión -->
       <form id="loginForm" class="login-form" onsubmit="event.preventDefault();">
         <div class="form-group">
           <label for="loginUsuario">Nombre de Usuario</label>
-          <input type="text" id="loginUsuario" placeholder="Ingresa tu nombre para comenzar" required autocomplete="off" />
+          <input type="text" id="loginUsuario" placeholder="Ingresa tu usuario" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="loginClave">Contraseña</label>
+          <input type="password" id="loginClave" placeholder="Ingresa tu contraseña" required autocomplete="current-password" />
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
           Ingresar <i class="fa-solid fa-arrow-right-to-bracket" style="margin-left: 4px;"></i>
+        </button>
+      </form>
+
+      <!-- Formulario de Registro-->
+      <form id="registerForm" class="login-form" style="display: none;" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="regUsuario">Nombre de Usuario</label>
+          <input type="text" id="regUsuario" placeholder="Crea un nombre de usuario" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label for="regCorreo">Correo Electrónico</label>
+          <input type="email" id="regCorreo" placeholder="correo@ejemplo.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="regClave">Contraseña</label>
+          <input type="password" id="regClave" placeholder="Crea una contraseña" required autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px; background: var(--income);">
+          Registrarse <i class="fa-solid fa-user-plus" style="margin-left: 4px;"></i>
         </button>
       </form>
     </div>
